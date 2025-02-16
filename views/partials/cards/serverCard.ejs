@@ -1,13 +1,9 @@
-<%
-    let viewURL = `${linkPrefix}/servers/${server._id}`;  
-    if (server.tags.includes("LGBT")) viewURL = `${lgbtWebURL}${linkPrefix}/servers/${server._id}`;
-%>
 <div class="column is-one-third" is-server-card>
     <div class="box has-background-primary" style="overflow: hidden; height: 100%;">
         <article class="media">
             <div class="media-left">
                 <figure class="image is-64x64">
-                    <img width="64" height="64" class="is-rounded" loading="lazy" src="<%= server.icon.hash ? server.icon.url : `${baseURL}/img/defaultavatar` %>.<%= imageFormat %>?size=128" alt="<%= __("common.img.icon", server.name) %>" onerror="this.onerror = null;this.src = '/img/defaultavatar.<%= imageFormat %>';console.log('<%= __("common.img.loadFail", server._id) %>');" >
+                    <img width="64" height="64" class="is-rounded" loading="lazy" src="<%= server.icon.hash ? server.icon.url : `${baseURL}/img/defaultavatar` %>.webp?size=128" alt="<%= __("common.img.icon", server.name) %>" onerror="this.onerror = null;this.src = '/img/defaultavatar.webp';console.log('<%= __("common.img.loadFail", server._id) %>');" >
                 </figure>
             </div>
             <div style="overflow: hidden;" class="media-content">
@@ -23,14 +19,14 @@
                 <div class="content-footer">
                     <div class="buttons">
                         <% if (search === true) { %>
-                            <a href="<%= viewURL %>" class="button is-default is-outlined">
+                            <a href="<%= linkPrefix %>/servers/<%= server._id %>" class="button is-default is-outlined">
                                 <span class="icon">
                                   <i class="fas fa-comments-alt"></i>
                                 </span>
                                 <span><%= __("common.view.server") %></span>
                             </a>
                         <% } else if (queue === true) { %>
-                            <a href="<%= viewURL %>" class="button is-default is-outlined">
+                            <a href="<%= linkPrefix %>/servers/<%= server._id %>" class="button is-default is-outlined">
                                 <span class="icon">
                                 <i class="fas fa-eye"></i>
                                 </span>
@@ -55,7 +51,7 @@
                                 <span><%= __("common.staff.decline") %></span>
                             </a>
                         <% } else { %>
-                            <a href="<%= viewURL %>" class="button is-default is-outlined">
+                            <a href="<%= linkPrefix %>/servers/<%= server._id %>" class="button is-default is-outlined">
                                 <span class="icon">
                                 <i class="fas fa-eye"></i>
                                 </span>

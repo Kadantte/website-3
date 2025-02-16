@@ -111,6 +111,7 @@ dist
 .tern-port
 
 # SSL & configuration files
+.env.production
 settings.json
 .env
 ssl/
@@ -121,5 +122,12 @@ dump.rdb
 # Sitemap
 src/Assets/Public/sitemap.xml
 
-# Yarn is disgusting
+# We only use pnpm
 yarn.lock
+package-lock.json
+
+# copied lib-comparison data
+data/
+
+# Sentry Config File
+.sentryclirc

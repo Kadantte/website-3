@@ -1,9 +1,17 @@
-FROM node:17.9.0-alpine3.14
-WORKDIR /app
-RUN apk update && apk add git ca-certificates
-COPY . .
-RUN mv settings.example.json settings.json
-RUN npm ci --production
-RUN npx tsc-transpile-only
-RUN rm -rf src/ @types/ settings.json
-CMD ["npm", "start"]
+# syntax=docker/dockerfile:1.4
+# NOTE: You should have made a settings.json file before running docker compose.
+ARG NODE_VERSION="22-alpine"
+FROM node:${NODE_VERSION}
+# Copy to-be-compiled files to container filesystem
+COPY . /opt/del
+# Set new working dir
+WORKDIR /opt/del
+# Run apt update & add needed packages
+RUN apk update && \
+    apk add git ca-certificates
+# Enable pnpm
+RUN corepack enable pnpm
+# Install node modules
+RUN CI=true pnpm i
+# Start the process within the container
+CMD ["pnpm", "start"]

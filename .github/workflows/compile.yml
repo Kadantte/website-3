@@ -7,26 +7,24 @@ on:
   pull_request:
 
 jobs:
-  node14:
-    name: node v14 - tsc
+  node20:
+    name: node v22 - tsc
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: install node v14
-        uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - name: installs pnpm
+        uses: pnpm/action-setup@v2
         with:
-          node-version: 14
-      - name: snyk install
-        run: npm i -g snyk
-      - name: install
-        run: npm install
+          version: 8.15.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: 'pnpm'
       - name: dependencies
-        run: npm ci
+        run: pnpm i
       - name: settings
         run: cp settings.example.json settings.json
       - name: tsc
         uses: icrawl/action-tsc@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          job-name: tsc

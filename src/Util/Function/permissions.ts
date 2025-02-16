@@ -1,7 +1,7 @@
 /*
 Discord Extreme List - Discord's unbiased list.
 
-Copyright (C) 2020 Carolina Mitchell-Acason, John Burke, Advaith Jagathesan
+Copyright (C) 2020-2025 Carolina Mitchell, John Burke, Advaith Jagathesan
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -17,11 +17,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { OAuth2Scopes } from "discord-api-types/v10";
-import { Request, Response } from "express";
-import settings from "../../../settings.json" assert { type: "json" };
-import * as discord from "../Services/discord.js";
-
+import { OAuth2Scopes, Routes } from "discord.js";
+import type { Request, Response } from "express";
+import settings from "../../../settings.json" with { type: "json" };
+import * as discord from "../Services/discord.ts";
 export const auth = (req: Request, res: Response, next: () => void) => {
     if (req.session.logoutJustCont === true) {
         req.session.logoutJust = false;
@@ -36,21 +35,23 @@ export const auth = (req: Request, res: Response, next: () => void) => {
     }
 };
 
-export const scopes = (scopes: OAuth2Scopes[]) => (req: Request, res: Response, next: () => void) => {
-    if (req.session.logoutJustCont === true) {
-        req.session.logoutJust = false;
-        req.session.logoutJustCont = false;
-        console.log('logoutJustCont')
-        return res.redirect("/");
-    }
+export const scopes =
+    (scopes: OAuth2Scopes[]) =>
+    (req: Request, res: Response, next: () => void) => {
+        if (req.session.logoutJustCont === true) {
+            req.session.logoutJust = false;
+            req.session.logoutJustCont = false;
+            return res.redirect("/");
+        }
 
-
-    if (!scopes.every(scope => req.user.db.auth?.scopes?.includes(scope))) {
-        res.redirect(`/auth/login/callback?scope=${scopes.join(' ')}`)
-    } else {
-        next()
-    }
-};
+        if (
+            !scopes.every((scope) => req.user.db.auth?.scopes?.includes(scope))
+        ) {
+            res.redirect(`/auth/login/callback?scope=${scopes.join(" ")}`);
+        } else {
+            next();
+        }
+    };
 
 export const member = async (req: Request, res: Response, next: () => void) => {
     if (req.session.logoutJustCont === true) {
@@ -59,8 +60,11 @@ export const member = async (req: Request, res: Response, next: () => void) => {
         return res.redirect("/");
     }
 
-    if (!await discord.getMember(req.body.id)) {
-        discord.bot.api.guilds(settings.guild.main).members(req.user.id).put({ data: { access_token: req.user.db.auth.accessToken } })
+    if (!(await discord.getMember(req.body.id))) {
+        await discord.bot.rest
+            .get(Routes.guildMembers(settings.guild.main), {
+                body: { access_token: req.user.db.auth.accessToken }
+            })
             .catch(() => {});
     }
 
@@ -79,6 +83,7 @@ export const mod = (req: Request, res: Response, next: () => void) => {
             next();
         } else {
             return res.status(403).render("status", {
+                res,
                 title: res.__("common.error"),
                 status: 403,
                 subtitle: res.__("common.error.notMod"),
@@ -101,6 +106,7 @@ export const assistant = (req: Request, res: Response, next: () => void) => {
             next();
         } else {
             return res.status(403).render("status", {
+                res,
                 title: res.__("common.error"),
                 status: 403,
                 subtitle: res.__("common.error.notAssistant"),
@@ -123,6 +129,7 @@ export const admin = (req: Request, res: Response, next: () => void) => {
             next();
         } else {
             return res.status(403).render("status", {
+                res,
                 title: res.__("common.error"),
                 status: 403,
                 subtitle: res.__("common.error.notAdmin"),

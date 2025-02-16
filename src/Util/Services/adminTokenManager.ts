@@ -1,7 +1,7 @@
 /*
 Discord Extreme List - Discord's unbiased list.
 
-Copyright (C) 2020 Carolina Mitchell-Acason, John Burke, Advaith Jagathesan
+Copyright (C) 2020-2025 Carolina Mitchell, John Burke, Advaith Jagathesan
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -126,11 +126,11 @@ export async function verifyToken(id: string, token: string) {
 
     if (!adminToken) return false;
 
-    let pass = false;
+    let pass: boolean;
     adminToken.token === token && adminToken._id === id
         ? (pass = true)
         : (pass = false);
-    return pass; // CHANGE THIS BEFORE PRODUCTION OTHERWISE EXTREMELY BAD THINGS WILL HAPPEN!!!!!
+    return pass;
 }
 
 setInterval(async () => {

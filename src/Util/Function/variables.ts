@@ -1,7 +1,7 @@
 /*
 Discord Extreme List - Discord's unbiased list.
 
-Copyright (C) 2020 Carolina Mitchell-Acason, John Burke, Advaith Jagathesan
+Copyright (C) 2020-2025 Carolina Mitchell, John Burke, Advaith Jagathesan
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -17,18 +17,17 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 
-import browser from "browser-detect";
 import color from "color";
-import settings from "../../../settings.json" assert { type: "json" };
-import pkg from "../../../package.json" assert { type: "json" };
-import releaseInfo from "../../../release-info.json" assert { type: "json" };
-import * as announcementCache from "../Services/announcementCaching.js";
-import * as userCache from "../Services/userCaching.js";
-import * as banList from "../Services/banned.js";
+import settings from "../../../settings.json" with { type: "json" };
+import pkg from "../../../package.json" with { type: "json" };
+import * as announcementCache from "../Services/announcementCaching.ts";
+import * as userCache from "../Services/userCaching.ts";
+import * as banList from "../Services/banned.ts";
 import { URLSearchParams } from "url";
-import { themes } from "../../../@types/enums.js";
+import { themes } from "../../../@types/enums.ts";
+import { UAParser } from "ua-parser-js";
 
 export const variables = async (
     req: Request,
@@ -49,13 +48,8 @@ export const variables = async (
         );
     }
 
-    req.browser = browser(req.headers["user-agent"]);
-    res.locals.browser = req.browser;
     res.locals.requestedAt = Date.now();
-    res.locals.cssVersion = releaseInfo.cssVersion;
-    res.locals.ddosMode = false; //ddosMode.getDDOSMode().active;
-    res.locals.gaID = settings.website.gaID;
-    res.locals.arcID = settings.website.arcID;
+    res.locals.cssVersion = pkg.version;
 
     res.locals.linkPrefix = `/${
         req.locale || settings.website.locales.default
@@ -86,19 +80,14 @@ export const variables = async (
     )
         req.session.redirectTo = req.originalUrl;
 
-
-    const version = pkg.version;
     req.del = {
-        version,
-        ...releaseInfo,
+        version: pkg.version,
         node: "Unavailable"
-    }
-    
+    };
+
     res.locals.colour = color;
     res.locals.premidPageInfo = "";
     res.locals.hideLogin = false;
-
-    res.locals.lgbtWebURL = settings.website.lgbtSiteURL;
 
     if (req.session.disableRTL && req.session.disableRTL === true) {
         res.locals.htmlDir = "ltr";
@@ -128,43 +117,32 @@ export const variables = async (
 
     res.locals.discordServer = "https://discord.gg/WeCer3J";
 
-    if (req.device.type === "tablet" || req.device.type === "phone") {
-        res.locals.mobile = true;
-        req.device.type === "phone"
-            ? (res.locals.phone = true)
-            : (res.locals.phone = false);
-        req.device.type === "tablet"
-            ? (res.locals.tablet = true)
-            : (res.locals.tablet = false);
-    } else {
-        res.locals.mobile = false;
-        res.locals.phone = false;
-        res.locals.tablet = false;
+    let useragent = new UAParser(
+        req.headers["user-agent"] ||
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15"
+    );
+
+    res.locals.mobile = false;
+    res.locals.phone = false;
+    res.locals.tablet = false;
+
+    try {
+        const deviceType = useragent.getDevice().type;
+
+        if (deviceType === "tablet") {
+            res.locals.mobile = true;
+            res.locals.tablet = true;
+        } else if (deviceType === "mobile") {
+            res.locals.mobile = true;
+            res.locals.phone = true;
+        }
+    } catch (e) {
+        console.error("UA parsing failed, defaulting to desktop mode: ", e);
     }
+    
+    let theme = req.user?.db?.preferences?.theme;
 
-    if (
-        (req.browser.name === "firefox") ||
-        (req.browser.name === "opera" &&
-            req.browser.os === "Android" &&
-            req.browser.versionNumber < 46) ||
-        (req.browser.name === "safari" &&
-            req.browser.versionNumber < 11.3 &&
-            req.get("User-Agent").toLowerCase().includes("kaios"))
-    ) {
-        res.locals.usePreload = false;
-    } else {
-        res.locals.usePreload = true;
-    }
-
-    if (req.headers.accept && req.headers.accept.includes("image/webp")) {
-        res.locals.imageFormat = "webp";
-    } else {
-        res.locals.imageFormat = "png";
-    }
-
-    let theme = req.user?.db?.preferences?.theme
-
-    if (req.query.theme) theme = themes[req.query.theme as string]
+    if (req.query.theme) theme = themes[req.query.theme as string];
 
     switch (theme) {
         case themes.dark:
@@ -191,16 +169,18 @@ export const variables = async (
         let user: delUser;
         user = await userCache.getUser(req.user.id);
 
-        if (!user) 
-            user = await global.db.collection<delUser>("users").findOne({ _id: req.user.id });
-        
+        if (!user)
+            user = await global.db
+                .collection<delUser>("users")
+                .findOne({ _id: req.user.id });
+
         req.user.db = user;
 
         if (
             req.user.db.rank.mod === true &&
             req.url !== "/profile/game/snakes"
         ) {
-            global.db.collection("users").updateOne(
+            await global.db.collection("users").updateOne(
                 { _id: req.user.id },
                 {
                     $set: {
@@ -229,6 +209,13 @@ export const variables = async (
         res.locals.foreground =
             req.user.db.preferences.defaultForegroundColour || "#ffffff";
     }
+
+    res.setHeader(
+        "Content-Security-Policy",
+        "default-src 'self' 'unsafe-inline' www.youtube.com youtube.com status.discordextremelist.xyz cdn.jsdelivr.net cdnjs.cloudflare.com static.cloudflareinsights.com js.sentry-cdn.com fonts.googleapis.com fonts.gstatic.com stats.g.doubleclick.net; " +
+            "img-src *; " +
+            "worker-src 'self';"
+    );
 
     next();
 };

@@ -1,7 +1,7 @@
 /*
 Discord Extreme List - Discord's unbiased list.
 
-Copyright (C) 2020 Carolina Mitchell-Acason, John Burke, Advaith Jagathesan
+Copyright (C) 2020-2025 Carolina Mitchell, John Burke, Advaith Jagathesan
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -17,7 +17,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import type { UserFlags, APIChannel, APIRole, APIUser, APIApplicationCommand, RESTPostOAuth2AccessTokenResult, OAuth2Scopes, Snowflake } from 'discord-api-types/v10'
+import type { UserFlags, APIChannel, APIRole, APIUser, APIApplicationCommand, RESTPostOAuth2AccessTokenResult, OAuth2Scopes, Snowflake } from 'discord.js'
 
 declare global {
     interface authUser extends RESTPostOAuth2AccessTokenResult {
@@ -55,6 +55,7 @@ declare global {
         fullUsername: string;
         locale: string;
         flags: UserFlags;
+        lastDataRequest: null | number;
         avatar: {
             hash: string;
             url: string;
@@ -202,6 +203,7 @@ declare global {
         longDesc: string;
         modNotes: string;
         reviewNotes: reviewNote[];
+        lastDenyReason: string;
         editors: string[];
         commands: APIApplicationCommand[];
         userFlags?: UserFlags;
@@ -247,6 +249,11 @@ declare global {
             options: string;
             server: string;
         };
+        date?: {
+            submitted: number;
+            approved: number;
+            edited: number;
+        };
         status: {
             approved: boolean;
             premium: boolean;
@@ -256,6 +263,8 @@ declare global {
             modHidden: boolean;
         };
     }
+
+    type partialBot = Partial<Omit<delBot, 'status'> & { status: Partial<delBot["status"]> }>;
 
     interface delServer {
         _id: Snowflake;

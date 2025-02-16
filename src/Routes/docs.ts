@@ -1,7 +1,7 @@
 /*
 Discord Extreme List - Discord's unbiased list.
 
-Copyright (C) 2020 Carolina Mitchell-Acason, John Burke, Advaith Jagathesan
+Copyright (C) 2020-2025 Carolina Mitchell, John Burke, Advaith Jagathesan
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -20,8 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import express from "express";
 import type { Request, Response } from "express";
 
-import settings from "../../settings.json" assert { type: "json" };
-import { variables } from "../Util/Function/variables.js";
+import settings from "../../settings.json" with { type: "json" };
+import { variables } from "../Util/Function/variables.ts";
 
 const router = express.Router();
 

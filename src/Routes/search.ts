@@ -1,7 +1,7 @@
 /*
 Discord Extreme List - Discord's unbiased list.
 
-Copyright (C) 2020 Carolina Mitchell-Acason, John Burke, Advaith Jagathesan
+Copyright (C) 2020-2025 Carolina Mitchell, John Burke, Advaith Jagathesan
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -23,13 +23,14 @@ import type { Request, Response } from "express";
 import chunk from "chunk";
 import path from "path";
 import * as ejs from "ejs";
-import settings from "../../settings.json" assert { type: "json" };
+import settings from "../../settings.json" with { type: "json" };
 
-import * as botCache from "../Util/Services/botCaching.js";
-import * as userCache from "../Util/Services/userCaching.js";
-import * as serverCache from "../Util/Services/serverCaching.js";
-import * as templateCache from "../Util/Services/templateCaching.js";
-import { variables } from "../Util/Function/variables.js";
+import * as botCache from "../Util/Services/botCaching.ts";
+import * as userCache from "../Util/Services/userCaching.ts";
+import * as serverCache from "../Util/Services/serverCaching.ts";
+import * as templateCache from "../Util/Services/templateCaching.ts";
+import { variables } from "../Util/Function/variables.ts";
+import type { ParsedQs } from "qs";
 
 const renderPath = path.join(process.cwd(), "views/partials");
 
@@ -38,8 +39,8 @@ const router = express.Router();
 router.get("/", variables, (req: Request, res: Response) => {
     res.locals.premidPageInfo = res.__("premid.search");
 
-    let search;
-    req.query.q ? (search = req.query.q) : (search = "");
+    let search: string | string[] | ParsedQs | ParsedQs[];
+    search = typeof req.query.q === "string" ? req.query.q : "";
 
     return res.render("templates/search", {
         title: res.__("common.search"),
@@ -51,13 +52,12 @@ router.get("/", variables, (req: Request, res: Response) => {
 
 router.post("/", variables, async (req: Request, res: Response) => {
     let { query, only }: { query: string; only: string[] } = req.body;
-    if (!query)
+    if (!query || typeof query !== "string" || typeof only !== "object")
         return res.status(400).json({
             error: true,
             status: 400,
-            message: "Missing body parameter 'query'"
+            message: "Missing body parameter"
         });
-    console.log(only)
     const originalQuery = query;
     query = query.toLowerCase();
     let isStaff = false;
@@ -89,7 +89,6 @@ router.post("/", variables, async (req: Request, res: Response) => {
             ? await templateCache.getAllTemplates()
             : []
     ]);
-    const imageFormat = res.locals.imageFormat;
     let results = chunk(
         await Promise.all([
             ...users
@@ -98,12 +97,11 @@ router.post("/", variables, async (req: Request, res: Response) => {
                         _id === query ||
                         fullUsername.toLowerCase().indexOf(query) >= 0
                 )
-                .map((user) => {
+                .map(async (user) => {
                     return ejs.renderFile(renderPath + "/cards/userCard.ejs", {
                         req,
                         linkPrefix: res.locals.linkPrefix,
                         user,
-                        imageFormat,
                         search: true,
                         baseURL: settings.website.url,
                         __: res.locals.__
@@ -116,14 +114,17 @@ router.post("/", variables, async (req: Request, res: Response) => {
                 )
                 .filter(
                     ({ status }) =>
-                        !status.archived && status.approved && !status.siteBot && !status.hidden && !status.modHidden
+                        !status.archived &&
+                        status.approved &&
+                        !status.siteBot &&
+                        !status.hidden &&
+                        !status.modHidden
                 )
-                .map((bot) => {
+                .map(async (bot) => {
                     return ejs.renderFile(renderPath + "/cards/botCard.ejs", {
                         req,
                         linkPrefix: res.locals.linkPrefix,
                         bot,
-                        imageFormat,
                         queue: false,
                         verificationApp: false,
                         search: true,
@@ -137,14 +138,13 @@ router.post("/", variables, async (req: Request, res: Response) => {
                     ({ _id, name }) =>
                         _id === query || name.toLowerCase().indexOf(query) >= 0
                 )
-                .map((server) => {
+                .map(async (server) => {
                     return ejs.renderFile(
                         renderPath + "/cards/serverCard.ejs",
                         {
                             req,
                             linkPrefix: res.locals.linkPrefix,
                             server,
-                            imageFormat,
                             search: true,
                             baseURL: settings.website.url,
                             profile: false,
@@ -157,14 +157,13 @@ router.post("/", variables, async (req: Request, res: Response) => {
                     ({ _id, name }) =>
                         _id === query || name.toLowerCase().indexOf(query) >= 0
                 )
-                .map((template) => {
+                .map(async (template) => {
                     return ejs.renderFile(
                         renderPath + "/cards/templateCard.ejs",
                         {
                             req,
                             linkPrefix: res.locals.linkPrefix,
                             template,
-                            imageFormat,
                             search: true,
                             baseURL: settings.website.url,
                             profile: false,
